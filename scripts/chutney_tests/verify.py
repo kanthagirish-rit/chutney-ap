@@ -97,6 +97,7 @@ def _verify_traffic(network):
     start_time = time.time()
     status = tt.run()
     end_time = time.time()
+    print("_________peers: {}\n_________status: {}".format(tt.peers, status))
     # if we fail, don't report the bandwidth
     if not status:
         return status

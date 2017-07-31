@@ -52,4 +52,5 @@ then
 fi
 
 printf "Using %s\n" "$("${PYTHON}" --version 2>&1)"
+printf "${@}\n"
 "${PYTHON}" -m chutney.TorNet "${@}"
