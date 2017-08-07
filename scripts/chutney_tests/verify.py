@@ -39,7 +39,9 @@ def _verify_traffic(network):
     # and a source-sink pair for a (bridge) client to each hidden service
     DATALEN = network._dfltEnv['data_bytes']
     # Print a dot each time a sink verifies this much data
+    GAPS = []
     DOTDATALEN = 5 * 1024 * 1024  # Octets.
+    DATA_BURSTS = []
     TIMEOUT = 3                   # Seconds.
     # Calculate the amount of random data we should use
     randomlen = _calculate_randomlen(DATALEN)
@@ -97,7 +99,7 @@ def _verify_traffic(network):
     start_time = time.time()
     status = tt.run()
     end_time = time.time()
-    print("_________peers: {}\n_________status: {}".format(tt.peers, status))
+    # print("_________peers: {}\n_________status: {}".format(tt.peers, status))
     # if we fail, don't report the bandwidth
     if not status:
         return status
