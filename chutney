@@ -51,6 +51,6 @@ then
     exit 1
 fi
 
-printf "Using %s" "$("${PYTHON}" --version 2>&1)\n"
+printf "Using %s\n" "$("${PYTHON}" --version 2>&1)"
 # printf "${PYTHON} -m chutney.TorNet ${@}"
 "${PYTHON}" -m chutney.TorNet "${@}"

@@ -341,7 +341,8 @@ class TrafficTester():
                  data={},
                  timeout=3,
                  repetitions=1,
-                 dot_repetitions=0):
+                 dot_repetitions=0,
+                 gaps=None):
         self.listener = Listener(self, endpoint)
         self.pending_close = []
         self.timeout = timeout
@@ -356,6 +357,7 @@ class TrafficTester():
         self.dot_repetitions = dot_repetitions
         debug("listener fd=%d" % self.listener.fd())
         self.peers = {}  # fd:Peer
+        self.gaps = gaps
 
     def sinks(self):
         return self.get_by_ptype(Peer.SINK)
@@ -408,6 +410,10 @@ class TrafficTester():
                     self.remove(p)
 
             for fd in sets[1]:  # writable fd's
+                if self.gaps:
+                    gap = self.gaps.pop(0)
+                    debug("On write, sleeping for %ds" % gap)
+                    time.sleep(gap)
                 p = self.peers.get(fd)
                 if p is not None:  # Might have been removed above.
                     n = p.on_writable()

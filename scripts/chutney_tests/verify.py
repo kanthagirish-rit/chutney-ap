@@ -63,8 +63,9 @@ def _verify_traffic(network):
         tmpdata = {}
     # now make the connections
     bind_to = (LISTEN_ADDR, LISTEN_PORT)
+    gap_hist = [2, 3, 1, 2]
     tt = chutney.Traffic.TrafficTester(bind_to, tmpdata, TIMEOUT, reps,
-                                       dot_reps)
+                                       dot_reps, gaps=gap_hist)
     client_list = filter(lambda n:
                          n._env['tag'] == 'c' or n._env['tag'] == 'bc',
                          network._nodes)
