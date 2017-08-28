@@ -45,7 +45,9 @@ def _verify_traffic(network):
     TIMEOUT = 3                   # Seconds.
     # Calculate the amount of random data we should use
     randomlen = _calculate_randomlen(DATALEN)
-    reps = _calculate_reps(DATALEN, randomlen)
+    # reps = _calculate_reps(DATALEN, randomlen)
+    reps = 3
+    print("data length = {}, repitions = {}".format(randomlen, reps))
     connection_count = network._dfltEnv['connection_count']
     # sanity check
     if reps == 0:
@@ -61,11 +63,12 @@ def _verify_traffic(network):
     else:
         dot_reps = 0
         tmpdata = {}
+    print("tmpdata length: {}".format(len(tmpdata)))
     # now make the connections
     bind_to = (LISTEN_ADDR, LISTEN_PORT)
     gap_hist = [2, 3, 1, 2]
     tt = chutney.Traffic.TrafficTester(bind_to, tmpdata, TIMEOUT, reps,
-                                       dot_reps, gaps=gap_hist)
+                                       dot_reps, gaps=None)
     client_list = filter(lambda n:
                          n._env['tag'] == 'c' or n._env['tag'] == 'bc',
                          network._nodes)

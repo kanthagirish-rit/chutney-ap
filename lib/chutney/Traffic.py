@@ -29,6 +29,7 @@ import struct
 import errno
 import time
 import os
+import random
 
 # Set debug_flag=True in order to debug this program or to get hints
 # about what's going wrong in your system.
@@ -287,6 +288,7 @@ class Source(Peer):
         if self.state == self.CONNECTED:
             # repeat self.data into self.outbuf if required
             if (len(self.outbuf) < len(self.data) and self.repetitions > 0):
+                debug("repetition %d" % (3-self.repetitions+1))
                 self.outbuf += self.data
                 self.repetitions -= 1
                 debug("adding more data to send (bytes=%d)" % len(self.data))
@@ -294,6 +296,9 @@ class Source(Peer):
                 debug("send repetitions remaining (reps=%d)"
                       % self.repetitions)
         try:
+            gap = random.randint(1, 3)
+            debug("gap of %d s" % gap)
+            time.sleep(gap)
             n = self.s.send(self.outbuf)
         except socket.error as e:
             if e[0] == errno.ECONNREFUSED:
