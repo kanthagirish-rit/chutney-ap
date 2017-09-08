@@ -1,5 +1,6 @@
 import time
 import chutney
+import random
 
 
 def run_test(network):
@@ -46,7 +47,7 @@ def _verify_traffic(network):
     # Calculate the amount of random data we should use
     randomlen = _calculate_randomlen(DATALEN)
     # reps = _calculate_reps(DATALEN, randomlen)
-    reps = 3
+    reps = 4
     print("data length = {}, repitions = {}".format(randomlen, reps))
     connection_count = network._dfltEnv['connection_count']
     # sanity check
@@ -66,9 +67,10 @@ def _verify_traffic(network):
     print("tmpdata length: {}".format(len(tmpdata)))
     # now make the connections
     bind_to = (LISTEN_ADDR, LISTEN_PORT)
-    gap_hist = [2, 3, 1, 2]
+    gap_hist = [random.randint(1, 3) for _ in range(reps)]
+    print("gap histogram: {}".format(gap_hist))
     tt = chutney.Traffic.TrafficTester(bind_to, tmpdata, TIMEOUT, reps,
-                                       dot_reps, gaps=None)
+                                       dot_reps)
     client_list = filter(lambda n:
                          n._env['tag'] == 'c' or n._env['tag'] == 'bc',
                          network._nodes)
@@ -94,16 +96,16 @@ def _verify_traffic(network):
     total_path_node_count += _configure_exits(tt, bind_to, tmpdata, reps,
                                               client_list, exit_list,
                                               LISTEN_ADDR, LISTEN_PORT,
-                                              connection_count)
+                                              connection_count, gap_hist)
     total_path_node_count += _configure_hs(tt, tmpdata, reps, client_list,
                                            hs_list, HS_PORT, LISTEN_ADDR,
                                            LISTEN_PORT, connection_count,
-                                           network._dfltEnv['hs_multi_client'])
+                                           network._dfltEnv['hs_multi_client'], 
+                                           gap_hist)
     print("Transmitting Data:")
     start_time = time.time()
     status = tt.run()
     end_time = time.time()
-    # print("_________peers: {}\n_________status: {}".format(tt.peers, status))
     # if we fail, don't report the bandwidth
     if not status:
         return status
@@ -140,7 +142,7 @@ def _calculate_reps(datalen, replen):
 # Each client binds directly to <CHUTNEY_LISTEN_ADDRESS>:LISTEN_PORT
 # via an Exit relay
 def _configure_exits(tt, bind_to, tmpdata, reps, client_list, exit_list,
-                     LISTEN_ADDR, LISTEN_PORT, connection_count):
+                     LISTEN_ADDR, LISTEN_PORT, connection_count, gap_hist):
     CLIENT_EXIT_PATH_NODES = 4
     exit_path_node_count = 0
     if len(exit_list) > 0:
@@ -154,7 +156,7 @@ def _configure_exits(tt, bind_to, tmpdata, reps, client_list, exit_list,
             for _ in range(connection_count):
                 proxy = ('localhost', int(op._env['socksport']))
                 tt.add(chutney.Traffic.Source(tt, bind_to, tmpdata, proxy,
-                                              reps))
+                                              reps, gap_hist))
     return exit_path_node_count
 
 
@@ -165,7 +167,8 @@ def _configure_exits(tt, bind_to, tmpdata, reps, client_list, exit_list,
 # Instead of binding directly to LISTEN_PORT via an Exit relay,
 # we bind to hs_hostname:HS_PORT via a hidden service connection
 def _configure_hs(tt, tmpdata, reps, client_list, hs_list, HS_PORT,
-                  LISTEN_ADDR, LISTEN_PORT, connection_count, hs_multi_client):
+                  LISTEN_ADDR, LISTEN_PORT, connection_count, hs_multi_client,
+                  gap_hist):
     CLIENT_HS_PATH_NODES = 8
     hs_path_node_count = (len(hs_list) * CLIENT_HS_PATH_NODES *
                           connection_count)
@@ -187,7 +190,7 @@ def _configure_hs(tt, tmpdata, reps, client_list, hs_list, HS_PORT,
             for _ in range(connection_count):
                 proxy = ('localhost', int(client._env['socksport']))
                 tt.add(chutney.Traffic.Source(tt, hs_bind_to, tmpdata,
-                                              proxy, reps))
+                                              proxy, reps, gap_hist))
     return hs_path_node_count
 
 

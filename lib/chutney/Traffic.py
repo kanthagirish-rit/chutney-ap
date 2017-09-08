@@ -29,7 +29,6 @@ import struct
 import errno
 import time
 import os
-import random
 
 # Set debug_flag=True in order to debug this program or to get hints
 # about what's going wrong in your system.
@@ -198,7 +197,8 @@ class Source(Peer):
     CONNECTING_THROUGH_PROXY = 2
     CONNECTED = 5
 
-    def __init__(self, tt, server, buf, proxy=None, repetitions=1):
+    def __init__(self, tt, server, buf, proxy=None, repetitions=1,
+                gap_histogram=None):
         super(Source, self).__init__(Peer.SOURCE, tt)
         self.state = self.NOT_CONNECTED
         self.data = buf
@@ -206,7 +206,9 @@ class Source(Peer):
         self.inbuf = ''
         self.proxy = proxy
         self.repetitions = repetitions
+        self.total_reps = repetitions
         self._sent_no_bytes = 0
+        self.gap_histogram = gap_histogram
         # sanity checks
         if len(self.data) == 0:
             self.repetitions = 0
@@ -288,7 +290,11 @@ class Source(Peer):
         if self.state == self.CONNECTED:
             # repeat self.data into self.outbuf if required
             if (len(self.outbuf) < len(self.data) and self.repetitions > 0):
-                debug("repetition %d" % (3-self.repetitions+1))
+                # Implementation of gap histogram between the repetitions
+                gap = self.gap_histogram[len(self.gap_histogram) - self.repetitions]
+                debug("repetition %d, gap %d" % (self.total_reps-self.repetitions+1, gap))
+                time.sleep(gap)
+                
                 self.outbuf += self.data
                 self.repetitions -= 1
                 debug("adding more data to send (bytes=%d)" % len(self.data))
@@ -296,9 +302,6 @@ class Source(Peer):
                 debug("send repetitions remaining (reps=%d)"
                       % self.repetitions)
         try:
-            gap = random.randint(1, 3)
-            debug("gap of %d s" % gap)
-            time.sleep(gap)
             n = self.s.send(self.outbuf)
         except socket.error as e:
             if e[0] == errno.ECONNREFUSED:
@@ -346,8 +349,7 @@ class TrafficTester():
                  data={},
                  timeout=3,
                  repetitions=1,
-                 dot_repetitions=0,
-                 gaps=None):
+                 dot_repetitions=0):
         self.listener = Listener(self, endpoint)
         self.pending_close = []
         self.timeout = timeout
@@ -362,7 +364,6 @@ class TrafficTester():
         self.dot_repetitions = dot_repetitions
         debug("listener fd=%d" % self.listener.fd())
         self.peers = {}  # fd:Peer
-        self.gaps = gaps
 
     def sinks(self):
         return self.get_by_ptype(Peer.SINK)
@@ -415,10 +416,6 @@ class TrafficTester():
                     self.remove(p)
 
             for fd in sets[1]:  # writable fd's
-                if self.gaps:
-                    gap = self.gaps.pop(0)
-                    debug("On write, sleeping for %ds" % gap)
-                    time.sleep(gap)
                 p = self.peers.get(fd)
                 if p is not None:  # Might have been removed above.
                     n = p.on_writable()
